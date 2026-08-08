@@ -341,6 +341,15 @@
       #overlay-fondo.visible { display: block; }
 
       #main { padding: 60px 8px 16px; }
+      @media (max-width: 720px) and (orientation: landscape) {
+  #main { padding: 44px 8px 8px; }
+  #boton-menu { top: 6px; left: 6px; width: 30px; height: 30px; font-size: 13px; }
+  .brand { margin-bottom: 8px; }
+  #nueva-conv { margin-bottom: 8px; padding: 6px 10px; }
+  .sidebar-label { margin-bottom: 2px; }
+  #chat { padding: 10px; gap: 8px; }
+  form { padding: 6px; }
+}
 
       #app { max-width: 100%; height: calc(var(--vh, 1vh) * 100 - 76px); }
 
