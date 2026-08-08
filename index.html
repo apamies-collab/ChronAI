@@ -23,21 +23,21 @@
     }
     * { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  height: calc(var(--vh, 1vh) * 100);
-  overflow: hidden;
-  overscroll-behavior: none;
-  position: fixed;
-  width: 100%;
-}
+    html, body {
+      margin: 0;
+      height: calc(var(--vh, 1vh) * 100);
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      width: 100%;
+    }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  display: flex;
-}
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+    }
 
     #sidebar {
       width: 240px;
@@ -161,6 +161,7 @@ body {
       gap: 14px;
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .msg {
@@ -374,23 +375,23 @@ body {
   </div>
 
   <script>
-    function ajustarAltura() 
+    function ajustarAltura() {
+      const altura = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
+    }
+    ajustarAltura();
+    window.addEventListener('resize', ajustarAltura);
+    window.addEventListener('orientationchange', ajustarAltura);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', ajustarAltura);
+      window.visualViewport.addEventListener('scroll', ajustarAltura);
+    }
+
     document.body.addEventListener('touchmove', function(e) {
-  if (!e.target.closest('#chat, #lista-conversaciones')) {
-    e.preventDefault();
-  }
-}, { passive: false });
-    {
-  const altura = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
-}
-ajustarAltura();
-window.addEventListener('resize', ajustarAltura);
-window.addEventListener('orientationchange', ajustarAltura);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', ajustarAltura);
-  window.visualViewport.addEventListener('scroll', ajustarAltura);
-}
+      if (!e.target.closest('#chat, #lista-conversaciones')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     const formulario = document.getElementById("formulario");
     const input = document.getElementById("mensaje");
