@@ -374,7 +374,13 @@ body {
   </div>
 
   <script>
-    function ajustarAltura() {
+    function ajustarAltura() 
+    document.body.addEventListener('touchmove', function(e) {
+  if (!e.target.closest('#chat, #lista-conversaciones')) {
+    e.preventDefault();
+  }
+}, { passive: false });
+    {
   const altura = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
 }
