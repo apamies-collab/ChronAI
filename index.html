@@ -369,11 +369,16 @@
 
   <script>
     function ajustarAltura() {
-      document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-    }
-    ajustarAltura();
-    window.addEventListener('resize', ajustarAltura);
-    window.addEventListener('orientationchange', ajustarAltura);
+  const altura = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
+}
+ajustarAltura();
+window.addEventListener('resize', ajustarAltura);
+window.addEventListener('orientationchange', ajustarAltura);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', ajustarAltura);
+  window.visualViewport.addEventListener('scroll', ajustarAltura);
+}
 
     const formulario = document.getElementById("formulario");
     const input = document.getElementById("mensaje");
