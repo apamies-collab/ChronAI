@@ -464,29 +464,45 @@
           cerrarMenu();
         });
 
-        div.querySelector(".conv-titulo").addEventListener("dblclick", (e) => {
-          e.stopPropagation();
-          const span = e.target;
-          const nombreActual = conv.titulo;
-          const inputEdit = document.createElement("input");
-          inputEdit.type = "text";
-          inputEdit.value = nombreActual;
-          inputEdit.style.cssText = "width:100%;background:var(--bg);color:var(--text);border:1px solid var(--amber);border-radius:6px;padding:2px 6px;font-size:13.5px;";
-          span.replaceWith(inputEdit);
-          inputEdit.focus();
-          inputEdit.select();
+        function activarEdicion(span) {
+  const nombreActual = conv.titulo;
+  const inputEdit = document.createElement("input");
+  inputEdit.type = "text";
+  inputEdit.value = nombreActual;
+  inputEdit.style.cssText = "width:100%;background:var(--bg);color:var(--text);border:1px solid var(--amber);border-radius:6px;padding:2px 6px;font-size:13.5px;";
+  span.replaceWith(inputEdit);
+  inputEdit.focus();
+  inputEdit.select();
 
-          function guardarNombre() {
-            const nuevo = inputEdit.value.trim();
-            conv.titulo = nuevo || nombreActual;
-            guardarTodo();
-            renderizarSidebar();
-          }
-          inputEdit.addEventListener("blur", guardarNombre);
-          inputEdit.addEventListener("keydown", (ev) => {
-            if (ev.key === "Enter") inputEdit.blur();
-          });
-        });
+  function guardarNombre() {
+    const nuevo = inputEdit.value.trim();
+    conv.titulo = nuevo || nombreActual;
+    guardarTodo();
+    renderizarSidebar();
+  }
+  inputEdit.addEventListener("blur", guardarNombre);
+  inputEdit.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") inputEdit.blur();
+  });
+}
+
+const tituloEl = div.querySelector(".conv-titulo");
+
+tituloEl.addEventListener("dblclick", (e) => {
+  e.stopPropagation();
+  activarEdicion(e.target);
+});
+
+let ultimoToque = 0;
+tituloEl.addEventListener("touchend", (e) => {
+  const ahora = Date.now();
+  if (ahora - ultimoToque < 350) {
+    e.preventDefault();
+    e.stopPropagation();
+    activarEdicion(e.target);
+  }
+  ultimoToque = ahora;
+});
 
         div.querySelector(".conv-borrar").addEventListener("click", (e) => {
           e.stopPropagation();
