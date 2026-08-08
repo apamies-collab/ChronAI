@@ -24,14 +24,15 @@
     * { box-sizing: border-box; }
 
     html, body {
-      margin: 0;
-      height: calc(var(--vh, 1vh) * 100);
-      overflow: hidden;
-      overscroll-behavior: none;
-      position: fixed;
-      width: 100%;
-    }
-
+  margin: 0;
+  height: calc(var(--vh, 1vh) * 100);
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
     body {
       background: var(--bg);
       color: var(--text);
@@ -377,16 +378,22 @@
 
   <script>
     function ajustarAltura() {
-      const altura = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
-    }
-    ajustarAltura();
-    window.addEventListener('resize', ajustarAltura);
-    window.addEventListener('orientationchange', ajustarAltura);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', ajustarAltura);
-      window.visualViewport.addEventListener('scroll', ajustarAltura);
-    }
+  const vv = window.visualViewport;
+  const altura = vv ? vv.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', (altura * 0.01) + 'px');
+
+  if (vv) {
+    document.body.style.top = (-vv.offsetTop) + 'px';
+  }
+  window.scrollTo(0, 0);
+}
+ajustarAltura();
+window.addEventListener('resize', ajustarAltura);
+window.addEventListener('orientationchange', ajustarAltura);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', ajustarAltura);
+  window.visualViewport.addEventListener('scroll', ajustarAltura);
+}
 
     document.body.addEventListener('touchmove', function(e) {
       if (!e.target.closest('#chat, #lista-conversaciones')) {
