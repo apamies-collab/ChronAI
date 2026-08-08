@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronAI — Organizador Semanal</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #12141C;
+      --surface: #1B1E29;
+      --sidebar: #161822;
+      --bubble-user: #2A2E3D;
+      --text: #EDEAE3;
+      --text-dim: #9296A6;
+      --amber: #E8A33D;
+      --teal: #3E7C7C;
+      --border: #2A2E3D;
+      --error: #E05555;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px;
+      margin-bottom: 18px;
+    }
+    .brand img { width: 28px; height: 28px; border-radius: 8px; }
+    .brand h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      margin: 0;
+    }
+    .brand h1 span { color: var(--amber); }
+
+    #nueva-conv {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--amber);
+      color: #12141C;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      margin-bottom: 18px;
+    }
+    #nueva-conv:hover { opacity: 0.9; }
+
+    .sidebar-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+
+    #lista-conversaciones {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .conv-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      color: var(--text-dim);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .conv-item:hover { background: var(--surface); color: var(--text); }
+    .conv-item.activa { background: var(--surface); color: var(--text); font-weight: 500; }
+
+    .conv-titulo {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .conv-borrar {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+    }
+    .conv-item:hover .conv-borrar { opacity: 1; }
+    .conv-borrar:hover { color: var(--error); }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 560px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    #chat {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 14.5px;
+      white-space: pre-wrap;
+    }
+    .msg .hora {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--teal);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+    }
+    .msg.ia {
+      align-self: flex-start;
+      background: var(--bubble-user);
+      border-bottom-left-radius: 2px;
+    }
+    .msg.intro {
+      align-self: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    .msg.error {
+      align-self: flex-start;
+      background: rgba(224, 85, 85, 0.12);
+      border: 1px solid rgba(224, 85, 85, 0.4);
+      color: #f2a9a9;
+    }
+    .msg.error::before {
+      content: "⚠ ";
+    }
+
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    .ring {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      border-top-color: var(--amber);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    form {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding: 12px;
+      gap: 8px;
+    }
+    #mensaje {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      outline: none;
+    }
+    #mensaje:focus { border-color: var(--amber); }
+    button[type="submit"] {
+      background: var(--amber);
+      color: #12141C;
+      border: none;
+      border-radius: 10px;
+      padding: 0 18px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover { opacity: 0.9; }
+
+    .msg.ia table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13.5px; }
+    .msg.ia th, .msg.ia td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+    .msg.ia th { background: rgba(232, 163, 61, 0.15); color: var(--amber); }
+    .msg.ia h1, .msg.ia h2, .msg.ia h3 { font-family: 'Space Grotesk', sans-serif; color: var(--amber); margin: 8px 0 4px; font-size: 15px; }
+    .msg.ia ul { margin: 4px 0; padding-left: 20px; }
+
+    #boton-adjuntar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    #boton-adjuntar:hover { background: var(--bubble-user); }
+
+    #chip-archivo {
+      margin: 0 12px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bubble-user);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      width: fit-content;
+    }
+    #chip-archivo button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #chip-archivo button:hover { color: var(--error); }
+
+    #boton-menu {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 20;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #overlay-fondo {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 15;
+    }
+
+    @media (max-width: 720px) {
+      #boton-menu { display: block; }
+
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 16;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+      }
+      #sidebar.abierto { transform: translateX(0); }
+
+      #overlay-fondo.visible { display: block; }
+
+      #main { padding: 60px 8px 16px; }
+
+      #app { max-width: 100%; height: calc(100vh - 76px); }
+
+      .msg { max-width: 92%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div class="brand">
+      <img src="logo.png" alt="Logo de ChronAI">
+      <h1>Chron<span>AI</span></h1>
+    </div>
+    <button id="nueva-conv">+ Nueva conversación</button>
+    <div class="sidebar-label">Conversaciones</div>
+    <div id="lista-conversaciones"></div>
+  </div>
+
+  <div id="overlay-fondo"></div>
+
+  <div id="main">
+    <button id="boton-menu" aria-label="Abrir menú">☰</button>
+    <div id="app">
+      <div id="chat"></div>
+      <div id="chip-archivo" style="display:none;"></div>
+      <form id="formulario">
+        <label for="archivo" id="boton-adjuntar" title="Adjuntar imagen o PDF">📎</label>
+        <input type="file" id="archivo" accept="image/*,application/pdf" hidden>
+        <input type="text" id="mensaje" placeholder="Escribe tu semana aquí..." autocomplete="off" maxlength="500">
+        <button type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const formulario = document.getElementById("formulario");
+    const input = document.getElementById("mensaje");
+    const chat = document.getElementById("chat");
+    const listaConversaciones = document.getElementById("lista-conversaciones");
+    const botonNueva = document.getElementById("nueva-conv");
+    const inputArchivo = document.getElementById("archivo");
+    const chipArchivo = document.getElementById("chip-archivo");
+    const botonMenu = document.getElementById("boton-menu");
+    const sidebar = document.getElementById("sidebar");
+    const overlayFondo = document.getElementById("overlay-fondo");
+    let archivoSeleccionado = null;
+
+    let conversaciones = JSON.parse(localStorage.getItem("chronai_conversaciones")) || [];
+    let idActual = localStorage.getItem("chronai_conv_actual") || null;
+
+    function abrirMenu() {
+      sidebar.classList.add("abierto");
+      overlayFondo.classList.add("visible");
+    }
+    function cerrarMenu() {
+      sidebar.classList.remove("abierto");
+      overlayFondo.classList.remove("visible");
+    }
+    botonMenu.addEventListener("click", abrirMenu);
+    overlayFondo.addEventListener("click", cerrarMenu);
+
+    function guardarTodo() {
+      localStorage.setItem("chronai_conversaciones", JSON.stringify(conversaciones));
+      localStorage.setItem("chronai_conv_actual", idActual);
+    }
+
+    function crearConversacion() {
+      const nueva = { id: Date.now().toString(), titulo: "Nueva conversación", mensajes: [] };
+      conversaciones.unshift(nueva);
+      idActual = nueva.id;
+      guardarTodo();
+      renderizarSidebar();
+      renderizarChat();
+    }
+
+    function obtenerActual() {
+      return conversaciones.find(c => c.id === idActual);
+    }
+
+    function horaActual() {
+      const ahora = new Date();
+      return ahora.getHours().toString().padStart(2, "0") + ":" + ahora.getMinutes().toString().padStart(2, "0");
+    }
+
+    function escaparHTML(texto) {
+      const div = document.createElement("div");
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    function renderizarSidebar() {
+      listaConversaciones.innerHTML = "";
+      conversaciones.forEach(conv => {
+        const div = document.createElement("div");
+        div.className = "conv-item" + (conv.id === idActual ? " activa" : "");
+        div.innerHTML = `<span class="conv-titulo">${escaparHTML(conv.titulo)}</span><button class="conv-borrar" title="Borrar">✕</button>`;
+
+        div.querySelector(".conv-titulo").addEventListener("click", () => {
+  idActual = conv.id;
+  guardarTodo();
+  document.querySelectorAll(".conv-item").forEach(el => el.classList.remove("activa"));
+  div.classList.add("activa");
+  renderizarChat();
+  cerrarMenu();
+});
+
+        div.querySelector(".conv-titulo").addEventListener("dblclick", (e) => {
+          e.stopPropagation();
+          const span = e.target;
+          const nombreActual = conv.titulo;
+          const inputEdit = document.createElement("input");
+          inputEdit.type = "text";
+          inputEdit.value = nombreActual;
+          inputEdit.style.cssText = "width:100%;background:var(--bg);color:var(--text);border:1px solid var(--amber);border-radius:6px;padding:2px 6px;font-size:13.5px;";
+          span.replaceWith(inputEdit);
+          inputEdit.focus();
+          inputEdit.select();
+
+          function guardarNombre() {
+            const nuevo = inputEdit.value.trim();
+            conv.titulo = nuevo || nombreActual;
+            guardarTodo();
+            renderizarSidebar();
+          }
+          inputEdit.addEventListener("blur", guardarNombre);
+          inputEdit.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") inputEdit.blur();
+          });
+        });
+
+        div.querySelector(".conv-borrar").addEventListener("click", (e) => {
+          e.stopPropagation();
+          conversaciones = conversaciones.filter(c => c.id !== conv.id);
+          if (idActual === conv.id) {
+            idActual = conversaciones.length > 0 ? conversaciones[0].id : null;
+            if (!idActual) crearConversacion();
+          }
+          guardarTodo();
+          renderizarSidebar();
+          renderizarChat();
+        });
+
+        listaConversaciones.appendChild(div);
+      });
+    }
+
+    function renderizarChat() {
+      const conv = obtenerActual();
+      chat.innerHTML = "";
+      if (!conv || conv.mensajes.length === 0) {
+        chat.innerHTML = `<p class="msg intro">Cuéntame tu semana — estudios, trabajo, lo que tengas — y te la organizo.</p>`;
+        return;
+      }
+      conv.mensajes.forEach(msg => {
+        if (msg.tipo === "user") {
+          chat.innerHTML += `<div class="msg user">${escaparHTML(msg.texto)}<span class="hora">${msg.hora}</span></div>`;
+        } else if (msg.tipo === "error") {
+          chat.innerHTML += `<div class="msg error">${escaparHTML(msg.texto)}<span class="hora">${msg.hora}</span></div>`;
+        } else {
+          chat.innerHTML += `<div class="msg ia">${DOMPurify.sanitize(marked.parse(msg.texto))}<span class="hora">${msg.hora}</span></div>`;
+        }
+      });
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    botonNueva.addEventListener("click", () => { crearConversacion(); cerrarMenu(); });
+
+    inputArchivo.addEventListener("change", () => {
+      const file = inputArchivo.files[0];
+      if (!file) return;
+      archivoSeleccionado = file;
+      chipArchivo.style.display = "flex";
+      chipArchivo.innerHTML = `📎 ${escaparHTML(file.name)} <button type="button" id="quitar-archivo">✕</button>`;
+      document.getElementById("quitar-archivo").addEventListener("click", () => {
+        archivoSeleccionado = null;
+        inputArchivo.value = "";
+        chipArchivo.style.display = "none";
+      });
+    });
+
+    function archivoABase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    formulario.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const texto = input.value.trim();
+      if (!texto && !archivoSeleccionado) return;
+
+      let conv = obtenerActual();
+      if (!conv) { crearConversacion(); conv = obtenerActual(); }
+
+      if (conv.mensajes.length === 0) {
+        conv.titulo = texto ? (texto.length > 28 ? texto.slice(0, 28) + "…" : texto) : "Archivo adjunto";
+      }
+
+      const horaUser = horaActual();
+      const textoMostrado = texto + (archivoSeleccionado ? ` 📎 ${archivoSeleccionado.name}` : "");
+      conv.mensajes.push({ tipo: "user", texto: textoMostrado, hora: horaUser });
+      guardarTodo();
+      renderizarSidebar();
+      renderizarChat();
+
+      let payloadArchivo = null;
+      if (archivoSeleccionado) {
+        const base64 = await archivoABase64(archivoSeleccionado);
+        payloadArchivo = {
+          mediaType: archivoSeleccionado.type,
+          data: base64
+        };
+      }
+
+      input.value = "";
+      archivoSeleccionado = null;
+      inputArchivo.value = "";
+      chipArchivo.style.display = "none";
+
+      const pensando = document.createElement("div");
+      pensando.className = "thinking";
+      pensando.innerHTML = `<div class="ring"></div> ChronAI está pensando...`;
+      chat.appendChild(pensando);
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const response = await fetch("/organizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: texto, archivo: payloadArchivo })
+        });
+
+        const data = await response.json();
+        pensando.remove();
+
+        const hora = horaActual();
+
+        if (data.error) {
+          conv.mensajes.push({ tipo: "error", texto: data.mensaje, hora: hora });
+        } else {
+          conv.mensajes.push({ tipo: "ia", texto: data.respuesta, hora: hora });
+        }
+        guardarTodo();
+        renderizarChat();
+
+      } catch (err) {
+        pensando.remove();
+        const hora = horaActual();
+        conv.mensajes.push({ tipo: "error", texto: "No se pudo conectar con el servidor. Comprueba que esté encendido.", hora: hora });
+        guardarTodo();
+        renderizarChat();
+      }
+    });
+
+    if (conversaciones.length === 0) {
+      crearConversacion();
+    } else {
+      if (!obtenerActual()) idActual = conversaciones[0].id;
+      renderizarSidebar();
+      renderizarChat();
+    }
+  </script>
+
+</body>
+</html>
