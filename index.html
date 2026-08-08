@@ -23,15 +23,21 @@
     }
     * { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      display: flex;
-      height: calc(var(--vh, 1vh) * 100);
-      overflow: hidden;
-    }
+html, body {
+  margin: 0;
+  height: calc(var(--vh, 1vh) * 100);
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+}
 
     #sidebar {
       width: 240px;
